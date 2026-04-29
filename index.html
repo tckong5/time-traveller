@@ -91,9 +91,13 @@
             transition: all 0.2s;
             position: relative;
             overflow: hidden;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
 
-        /* 震動與錯誤反饋 */
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
             25% { transform: translateX(-4px); }
@@ -125,22 +129,25 @@
 
     <div class="max-w-xl w-full px-6">
         <header class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-sky-400 mb-2 tracking-tighter">TIME TRAVELLER</h1>
-            <p class="text-slate-400 text-xs">穿梭於地球時區，尋找你遺失或嚮往的時刻</p>
+            <h1 class="text-3xl font-bold text-sky-400 mb-2 tracking-tighter text-shadow-sm">TIME TRAVELLER</h1>
+            <p class="text-slate-400 text-[10px] uppercase tracking-[0.2em]">Temporal Dislocation Interface</p>
         </header>
 
         <!-- 顯示面板 -->
-        <div class="time-card rounded-3xl p-8 mb-6 text-center">
+        <div class="time-card rounded-3xl p-8 mb-6 text-center shadow-2xl">
             <div id="display-time" class="text-7xl font-bold text-white tracking-tighter">--:--</div>
             <div id="display-date" class="text-sm text-sky-400 mt-2 font-bold uppercase tracking-widest">-- / -- / --</div>
             
             <div class="flex justify-between mt-10 border-t border-slate-700/50 pt-6 px-2">
                 <div class="text-left">
-                    <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">Offset</p>
-                    <p id="info-offset" class="text-xl font-bold text-white">UTC +8.0</p>
+                    <p class="text-[10px] text-slate-500 uppercase font-bold mb-1 tracking-widest">Current Offset</p>
+                    <div class="flex items-center">
+                        <span class="w-2 h-2 bg-sky-500 rounded-full mr-2 animate-pulse"></span>
+                        <p id="info-offset" class="text-xl font-bold text-white">UTC +8.0</p>
+                    </div>
                 </div>
                 <div class="text-right">
-                    <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">Location</p>
+                    <p class="text-[10px] text-slate-500 uppercase font-bold mb-1 tracking-widest">Destination</p>
                     <p id="info-city" class="text-xl font-bold text-emerald-400">Hong Kong</p>
                 </div>
             </div>
@@ -148,62 +155,72 @@
 
         <!-- 中間：Tab 選項 -->
         <div class="time-card rounded-2xl p-4 mb-10">
-            <div class="flex mb-4 rounded-xl bg-slate-800/50 p-1">
+            <div class="flex mb-4 rounded-xl bg-slate-900/50 p-1 border border-slate-700/30">
                 <button id="tab-yesterday-btn" onclick="switchTab('yesterday')" class="w-1/2 py-2 text-xs font-bold rounded-lg text-slate-400 transition-all uppercase tracking-wider">Yesterday</button>
                 <button id="tab-today-btn" onclick="switchTab('today')" class="w-1/2 py-2 text-xs font-bold rounded-lg tab-active transition-all uppercase tracking-wider">Today</button>
             </div>
 
+            <!-- Yesterday Grid -->
             <div id="options-yesterday" class="grid grid-cols-4 gap-2 hidden">
-                <button id="opt-y-9" onclick="handleOptionClick('yesterday', 9, this)" class="option-btn rounded-xl p-3 text-center">
+                <button id="opt-y-morning" onclick="handleOptionClick('yesterday', 'morning', this)" class="option-btn rounded-xl p-2 text-center group">
                     <div class="status-tag"></div>
-                    <div class="text-[10px] font-bold text-sky-400">朝早</div>
+                    <div class="text-[10px] font-bold text-sky-400 group-hover:scale-110 transition-transform">朝早</div>
+                    <div class="text-[8px] text-slate-500">06-12</div>
                 </button>
-                <button id="opt-y-14" onclick="handleOptionClick('yesterday', 14, this)" class="option-btn rounded-xl p-3 text-center">
+                <button id="opt-y-afternoon" onclick="handleOptionClick('yesterday', 'afternoon', this)" class="option-btn rounded-xl p-2 text-center group">
                     <div class="status-tag"></div>
-                    <div class="text-[10px] font-bold text-sky-400">中午</div>
+                    <div class="text-[10px] font-bold text-sky-400 group-hover:scale-110 transition-transform">晏就</div>
+                    <div class="text-[8px] text-slate-500">12-18</div>
                 </button>
-                <button id="opt-y-22" onclick="handleOptionClick('yesterday', 22, this)" class="option-btn rounded-xl p-3 text-center">
+                <button id="opt-y-night" onclick="handleOptionClick('yesterday', 'night', this)" class="option-btn rounded-xl p-2 text-center group">
                     <div class="status-tag"></div>
-                    <div class="text-[10px] font-bold text-sky-400">夜晚</div>
+                    <div class="text-[10px] font-bold text-sky-400 group-hover:scale-110 transition-transform">夜晚</div>
+                    <div class="text-[8px] text-slate-500">18-04</div>
                 </button>
-                <button id="opt-y-23" onclick="handleOptionClick('yesterday', 23, this)" class="option-btn rounded-xl p-3 text-center">
+                <button id="opt-y-deep" onclick="handleOptionClick('yesterday', 'deep_pre', this)" class="option-btn rounded-xl p-2 text-center group">
                     <div class="status-tag"></div>
-                    <div class="text-[10px] font-bold text-sky-400">2400前</div>
+                    <div class="text-[10px] font-bold text-sky-400 group-hover:scale-110 transition-transform">2400前</div>
+                    <div class="text-[8px] text-slate-500">深夜</div>
                 </button>
             </div>
 
+            <!-- Today Grid -->
             <div id="options-today" class="grid grid-cols-4 gap-2">
-                <button id="opt-t-9" onclick="handleOptionClick('today', 9, this)" class="option-btn rounded-xl p-3 text-center">
+                <button id="opt-t-morning" onclick="handleOptionClick('today', 'morning', this)" class="option-btn rounded-xl p-2 text-center group">
                     <div class="status-tag"></div>
-                    <div class="text-[10px] font-bold text-emerald-400">朝早</div>
+                    <div class="text-[10px] font-bold text-emerald-400 group-hover:scale-110 transition-transform">朝早</div>
+                    <div class="text-[8px] text-slate-500">06-12</div>
                 </button>
-                <button id="opt-t-14" onclick="handleOptionClick('today', 14, this)" class="option-btn rounded-xl p-3 text-center">
+                <button id="opt-t-afternoon" onclick="handleOptionClick('today', 'afternoon', this)" class="option-btn rounded-xl p-2 text-center group">
                     <div class="status-tag"></div>
-                    <div class="text-[10px] font-bold text-emerald-400">中午</div>
+                    <div class="text-[10px] font-bold text-emerald-400 group-hover:scale-110 transition-transform">晏就</div>
+                    <div class="text-[8px] text-slate-500">12-18</div>
                 </button>
-                <button id="opt-t-22" onclick="handleOptionClick('today', 22, this)" class="option-btn rounded-xl p-3 text-center">
+                <button id="opt-t-night" onclick="handleOptionClick('today', 'night', this)" class="option-btn rounded-xl p-2 text-center group">
                     <div class="status-tag"></div>
-                    <div class="text-[10px] font-bold text-emerald-400">夜晚</div>
+                    <div class="text-[10px] font-bold text-emerald-400 group-hover:scale-110 transition-transform">夜晚</div>
+                    <div class="text-[8px] text-slate-500">18-04</div>
                 </button>
-                <button id="opt-t-23" onclick="handleOptionClick('today', 23, this)" class="option-btn rounded-xl p-3 text-center">
+                <button id="opt-t-deep" onclick="handleOptionClick('today', 'deep_pre', this)" class="option-btn rounded-xl p-2 text-center group">
                     <div class="status-tag"></div>
-                    <div class="text-[10px] font-bold text-emerald-400">2400前</div>
+                    <div class="text-[10px] font-bold text-emerald-400 group-hover:scale-110 transition-transform">2400前</div>
+                    <div class="text-[8px] text-slate-500">深夜</div>
                 </button>
             </div>
         </div>
 
         <!-- 底部：飛機時空軸 -->
         <div class="relative px-4 h-20 flex items-center">
-            <div class="w-full timeline-container">
+            <div class="w-full timeline-container shadow-[0_0_10px_rgba(51,65,85,0.3)]">
                 <div id="plane-wrapper" class="plane-wrapper">
-                    <div id="plane" class="plane-icon">✈️</div>
+                    <div id="plane" class="plane-icon transition-transform duration-300">✈️</div>
                 </div>
                 <div id="hk-marker" class="hk-now-marker"></div>
             </div>
             <input type="range" id="main-timeline" min="-20" max="6" step="0.1" value="0" oninput="handleSliderChange()">
             
-            <div class="absolute -bottom-2 left-4 text-[8px] text-slate-600 font-bold">UTC-12</div>
-            <div class="absolute -bottom-2 right-4 text-[8px] text-slate-600 font-bold">UTC+14</div>
+            <div class="absolute -bottom-2 left-4 text-[8px] text-slate-600 font-bold tracking-tighter">PAST (-20H)</div>
+            <div class="absolute -bottom-2 right-4 text-[8px] text-slate-600 font-bold tracking-tighter">FUTURE (+6H)</div>
         </div>
     </div>
 
@@ -221,23 +238,47 @@
         ];
 
         const clickStore = {};
+        const timeConfigs = {
+            'morning': { h: 9, m: 0 },
+            'afternoon': { h: 14, m: 0 },
+            'night': { h: 22, m: 0 },
+            'deep_pre': { h: 23, m: 0 }
+        };
 
-        function getTargetTime(day, hour) {
+        // 核心：熬夜者邏輯
+        function getLogicalDate() {
             const now = new Date();
-            const hkMidnight = new Date(now.toLocaleDateString('en-CA', {timeZone: 'Asia/Hong_Kong'}) + "T00:00:00+08:00");
-            const target = new Date(hkMidnight);
-            if (day === 'yesterday') target.setDate(target.getDate() - 1);
-            if (day === 'today' && hour === 23 && now.getHours() < 5) target.setDate(target.getDate() - 1);
-            target.setHours(hour, 0, 0, 0);
+            const logicDate = new Date(now);
+            // 只要未到凌晨 5 點，逻辑上就還是在過物理上的「昨天」
+            if (now.getHours() < 5) {
+                logicDate.setDate(now.getDate() - 1);
+            }
+            return logicDate;
+        }
+
+        function getTargetTime(dayTab, type) {
+            const now = new Date();
+            const logicNow = getLogicalDate();
+            
+            // 獲取邏輯今天香港時間的 00:00
+            const baseDate = new Date(logicNow.toLocaleDateString('en-CA', {timeZone: 'Asia/Hong_Kong'}) + "T00:00:00+08:00");
+            const target = new Date(baseDate);
+            const config = timeConfigs[type];
+
+            if (dayTab === 'yesterday') {
+                target.setDate(target.getDate() - 1);
+            }
+
+            target.setHours(config.h, config.m, 0, 0);
             return target;
         }
 
-        function handleOptionClick(day, hour, btn) {
+        function handleOptionClick(day, type, btn) {
             const btnId = btn.id;
             if (!clickStore[btnId]) clickStore[btnId] = 0;
 
             const now = new Date();
-            const target = getTargetTime(day, hour);
+            const target = getTargetTime(day, type);
             const diffHours = (target - now) / 3600000;
             
             const isTooOld = diffHours < -20.01; 
@@ -248,30 +289,26 @@
 
             clickStore[btnId]++;
 
-            // 震動條件：無法到達 OR 當下
             if (isTooOld || isFuture || isNow) {
                 if (clickStore[btnId] <= 5) {
                     btn.classList.add('animate-shake');
                     setTimeout(() => btn.classList.remove('animate-shake'), 300);
-                    // 如果是當下，雖然震動但依然可以執行跳轉
-                    if (isNow) jumpTo(day, hour); 
+                    if (isNow) executeJump(target); 
                     return;
                 } else {
                     btn.dataset.locked = "true";
                     btn.classList.add('expired-btn');
                     let msg = isNow ? "珍惜當下" : (isTooOld ? "光陰不再" : "未來可期");
-                    btn.innerHTML = `<div class="text-[9px] font-bold text-slate-500 uppercase tracking-tighter leading-tight">${msg}</div>`;
+                    btn.innerHTML = `<div class="text-[9px] font-bold text-slate-500 uppercase tracking-tighter leading-tight text-center">${msg}</div>`;
                     return;
                 }
             }
 
-            // 正常跳躍
-            jumpTo(day, hour);
+            executeJump(target);
         }
 
-        function jumpTo(day, hour) {
+        function executeJump(target) {
             const now = new Date();
-            const target = getTargetTime(day, hour);
             const diffHours = (target - now) / 3600000;
             const clampedDiff = Math.max(-20, Math.min(6, diffHours));
             document.getElementById('main-timeline').value = clampedDiff;
@@ -301,17 +338,18 @@
 
         function updateButtonsStatus() {
             const now = new Date();
-            const options = [
-                {d:'yesterday', h:9, id:'opt-y-9'}, {d:'yesterday', h:14, id:'opt-y-14'}, {d:'yesterday', h:22, id:'opt-y-22'}, {d:'yesterday', h:23, id:'opt-y-23'},
-                {d:'today', h:9, id:'opt-t-9'}, {d:'today', h:14, id:'opt-t-14'}, {d:'today', h:22, id:'opt-t-22'}, {d:'today', h:23, id:'opt-t-23'}
+            const buttons = [
+                {d:'yesterday', t:'morning', id:'opt-y-morning'}, {d:'yesterday', t:'afternoon', id:'opt-y-afternoon'}, {d:'yesterday', t:'night', id:'opt-y-night'}, {d:'yesterday', t:'deep_pre', id:'opt-y-deep'},
+                {d:'today', t:'morning', id:'opt-t-morning'}, {d:'today', t:'afternoon', id:'opt-t-afternoon'}, {d:'today', t:'night', id:'opt-t-night'}, {d:'today', t:'deep_pre', id:'opt-t-deep'}
             ];
 
-            options.forEach(opt => {
+            buttons.forEach(opt => {
                 const btn = document.getElementById(opt.id);
+                if (!btn) return;
                 const tag = btn.querySelector('.status-tag');
-                if (!btn || btn.dataset.locked === "true") return;
+                if (btn.dataset.locked === "true") return;
 
-                const target = getTargetTime(opt.d, opt.h);
+                const target = getTargetTime(opt.d, opt.t);
                 const diffHours = (target - now) / 3600000;
                 
                 if (diffHours < -20.01) {
@@ -319,12 +357,11 @@
                     tag.innerText = "OVER";
                     tag.className = "status-tag text-red-500";
                 } else if (Math.abs(diffHours) <= 0.5) {
-                    // 當下：灰掉且標註
                     btn.classList.add('expired-btn');
                     tag.innerText = "當下";
                     tag.className = "status-tag text-emerald-500";
                 } else if (diffHours > 6.01) {
-                    btn.classList.remove('expired-btn');
+                    btn.classList.add('expired-btn');
                     tag.innerText = "未到";
                     tag.className = "status-tag text-sky-500";
                 } else {
