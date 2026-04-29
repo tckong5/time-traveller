@@ -3,19 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Time Traveller</title>
+    <title>Time Traveller - 時區跳躍者</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
-        body { background-color: #0f172a; color: #f8fafc; font-family: 'Space+Mono', monospace; }
-        .time-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(56, 189, 248, 0.3); }
-        .neon-glow { text-shadow: 0 0 10px rgba(56, 189, 248, 0.8); }
-        .invalid-feedback { border-color: #ef4444 !important; box-shadow: 0 0 15px rgba(239, 68, 68, 0.4) !important; background-color: rgba(127, 29, 29, 0.3) !important; }
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 50% { transform: translateX(6px); } 75% { transform: translateX(-6px); } }
-        .animate-shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            font-family: 'Space+Mono', monospace;
+        }
+        .time-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+        .neon-glow {
+            text-shadow: 0 0 10px rgba(56, 189, 248, 0.8);
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            50% { transform: translateX(6px); }
+            75% { transform: translateX(-6px); }
+        }
+        .animate-shake {
+            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        .invalid-feedback {
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.4) !important;
+            background-color: rgba(127, 29, 29, 0.3) !important;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center p-4 md:p-8">
+
     <div class="max-w-2xl w-full">
         <header class="text-center mb-8">
             <h1 class="text-4xl font-bold neon-glow text-sky-400 mb-2">TIME TRAVELLER</h1>
@@ -23,31 +45,54 @@
         </header>
 
         <div class="time-card rounded-2xl p-6 mb-8">
+            <!-- 香港時間顯示 -->
             <div class="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
-                <div><span class="text-xs uppercase tracking-widest text-slate-500">香港時間 (UTC+8)</span><div id="current-hkt" class="text-2xl font-bold text-sky-300">--:--:--</div></div>
-                <div class="text-right"><span class="text-xs uppercase tracking-widest text-slate-500">日期</span><div id="current-date" class="text-lg font-semibold">----/--/--</div></div>
+                <div>
+                    <span class="text-xs uppercase tracking-widest text-slate-500">香港時間 (UTC+8)</span>
+                    <div id="current-hkt" class="text-2xl font-bold text-sky-300">--:--:--</div>
+                </div>
+                <div class="text-right">
+                    <span class="text-xs uppercase tracking-widest text-slate-500">日期</span>
+                    <div id="current-date" class="text-lg font-semibold">----/--/--</div>
+                </div>
             </div>
 
+            <!-- Tab 切換 -->
             <div class="flex mb-6 rounded-lg bg-slate-800 p-1">
-                <button id="tab-btn-yesterday" onclick="switchTab('yesterday')" class="w-1/2 py-2 text-sm font-bold rounded-md bg-sky-600 text-white transition-all">YESTERDAY</button>
-                <button id="tab-btn-today" onclick="switchTab('today')" class="w-1/2 py-2 text-sm font-bold rounded-md text-slate-400 transition-all">TODAY</button>
+                <button id="tab-btn-yesterday" onclick="switchTab('yesterday')" class="w-1/2 py-2 text-sm font-bold rounded-md bg-sky-600 text-white transition-all uppercase tracking-wider">Yesterday</button>
+                <button id="tab-btn-today" onclick="switchTab('today')" class="w-1/2 py-2 text-sm font-bold rounded-md text-slate-400 hover:text-white transition-all uppercase tracking-wider">Today</button>
             </div>
 
+            <!-- 按鈕容器 -->
             <div id="tab-yesterday" class="grid grid-cols-1 sm:grid-cols-2 gap-3 block"></div>
             <div id="tab-today" class="grid grid-cols-1 sm:grid-cols-2 gap-3 hidden"></div>
 
             <div class="border-t border-slate-700/50 pt-6 mt-6">
-                <button id="manual-btn" onclick="handleTravel(99, this)" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-lg transition-all">啟動跳躍</button>
+                <button onclick="handleTravel(99, this)" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-lg transition-all border border-slate-600">
+                    啟動時空跳躍
+                </button>
             </div>
         </div>
 
+        <!-- 結果顯示區 -->
         <div id="result-area" class="hidden mb-12">
             <div class="time-card rounded-2xl p-6 border-l-4 border-l-sky-500">
-                <p class="text-xs text-slate-400 uppercase">目標場景</p>
-                <p id="target-display" class="text-2xl font-bold text-white mb-4"></p>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-slate-800/70 p-4 rounded-xl"><p class="text-xs text-slate-400">時區</p><p id="offset-display" class="text-xl font-bold text-sky-400"></p></div>
-                    <div class="bg-slate-800/70 p-4 rounded-xl"><p class="text-xs text-slate-400">城市</p><p id="location-display" class="text-xl font-bold text-sky-400"></p></div>
+                <h2 class="text-xl font-bold mb-4 flex items-center">📍 跳躍目的地</h2>
+                <div class="space-y-4">
+                    <div class="bg-slate-800/70 p-4 rounded-xl border border-slate-700/50">
+                        <p class="text-xs text-slate-400 mb-1 uppercase tracking-widest">目標場景</p>
+                        <p id="target-display" class="text-2xl font-bold text-white"></p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-slate-800/70 p-4 rounded-xl text-center border border-slate-700/50">
+                            <p class="text-xs text-slate-400 mb-1 uppercase tracking-widest">時區 (Timezone)</p>
+                            <p id="offset-display" class="text-xl font-bold text-sky-400"></p>
+                        </div>
+                        <div class="bg-slate-800/70 p-4 rounded-xl text-center border border-slate-700/50">
+                            <p class="text-xs text-slate-400 mb-1 uppercase tracking-widest">建議座標 (City)</p>
+                            <p id="location-display" class="text-xl font-bold text-sky-400"></p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -55,55 +100,103 @@
 
     <script>
         const timezoneData = [
-            { offset: -12, location: "Baker Island" }, { offset: -10, location: "Honolulu" }, { offset: -8, location: "Los Angeles" }, { offset: -5, location: "New York" }, { offset: 0, location: "London" }, { offset: 1, location: "Paris" }, { offset: 3, location: "Moscow" }, { offset: 4, location: "Dubai" }, { offset: 7, location: "Bangkok" }, { offset: 8, location: "Hong Kong" }, { offset: 9, location: "Tokyo" }, { offset: 10, location: "Sydney" }, { offset: 12, location: "Auckland" }, { offset: 14, location: "Kiritimati" }
+            { offset: -12, location: "Baker Island" }, { offset: -11, location: "Pago Pago" }, { offset: -10, location: "Honolulu" },
+            { offset: -9, location: "Anchorage" }, { offset: -8, location: "Los Angeles" }, { offset: -7, location: "Denver" },
+            { offset: -6, location: "Chicago" }, { offset: -5, location: "New York" }, { offset: -4, location: "Santiago" },
+            { offset: -3, location: "Buenos Aires" }, { offset: 0, location: "London" }, { offset: 1, location: "Paris" },
+            { offset: 3, location: "Moscow" }, { offset: 4, location: "Dubai" }, { offset: 7, location: "Bangkok" },
+            { offset: 8, location: "Hong Kong" }, { offset: 9, location: "Tokyo" }, { offset: 10, location: "Sydney" },
+            { offset: 12, location: "Auckland" }, { offset: 14, location: "Kiritimati" }
         ];
 
-        const configs = [
-            { id: 1, tab: 'yesterday', label: '朝早', h: 9, c: 'text-sky-300' }, { id: 2, tab: 'yesterday', label: '中午', h: 14, c: 'text-sky-300' }, { id: 3, tab: 'yesterday', label: '夜晚', h: 22, c: 'text-sky-300' }, { id: 4, tab: 'yesterday', label: '深夜', h: 23, c: 'text-sky-300' },
-            { id: 5, tab: 'today', label: '朝早', h: 9, c: 'text-emerald-400' }, { id: 6, tab: 'today', label: '中午', h: 14, c: 'text-emerald-400' }, { id: 7, tab: 'today', label: '夜晚', h: 22, c: 'text-emerald-400' }, { id: 8, tab: 'today', label: '深夜', h: 23, c: 'text-emerald-400' }
+        const optionConfigs = [
+            { id: 1, tab: 'yesterday', label: '朝早', h: 9, color: 'text-sky-300' },
+            { id: 2, tab: 'yesterday', label: '中午', h: 14, color: 'text-sky-300' },
+            { id: 3, tab: 'yesterday', label: '夜晚', h: 22, color: 'text-sky-300' },
+            { id: 4, tab: 'yesterday', label: '深夜', h: 23, color: 'text-sky-300' }, // 23:00 目標
+            { id: 5, tab: 'today', label: '朝早', h: 9, color: 'text-emerald-400' },
+            { id: 6, tab: 'today', label: '中午', h: 14, color: 'text-emerald-400' },
+            { id: 7, tab: 'today', label: '夜晚', h: 22, color: 'text-emerald-400' },
+            { id: 8, tab: 'today', label: '深夜', h: 23, color: 'text-emerald-400' } // 23:00 目標
         ];
 
         let clickCounts = {};
 
-        function getTargetDate(id) {
+        function getTargetDate(optId) {
             const now = new Date();
-            const todayHK = new Date(new Date().toLocaleDateString('en-CA', {timeZone: 'Asia/Hong_Kong'}) + "T00:00:00+08:00");
-            const target = new Date(todayHK);
-            const conf = configs.find(c => c.id === id);
-            if (conf.tab === 'yesterday' || (id === 8 && now.getHours() < 5)) target.setDate(target.getDate() - 1);
-            target.setHours(conf.h, 0, 0, 0);
+            // 獲取香港今天的 00:00:00
+            const todayStr = now.toLocaleDateString('en-CA', {timeZone: 'Asia/Hong_Kong'});
+            const target = new Date(todayStr + "T00:00:00+08:00");
+            
+            const config = optionConfigs.find(c => c.id === optId);
+            if (!config) return now;
+
+            // 邏輯 1: 如果是 Yesterday Tab，減一天
+            if (config.tab === 'yesterday') {
+                target.setDate(target.getDate() - 1);
+            } 
+            // 邏輯 2: 如果是 Today 深夜，且現在是凌晨 0-5 點，視為「尋晚」
+            else if (optId === 8 && now.getHours() < 5) {
+                target.setDate(target.getDate() - 1);
+            }
+
+            target.setHours(config.h, 0, 0, 0);
             return target;
         }
 
-        function updateUI() {
+        function updateClock() {
             const now = new Date();
             document.getElementById('current-hkt').innerText = now.toLocaleTimeString('zh-HK', {hour12: false, timeZone: 'Asia/Hong_Kong'});
             document.getElementById('current-date').innerText = now.toLocaleDateString('zh-HK', {timeZone: 'Asia/Hong_Kong'});
-            configs.forEach(conf => {
-                const btn = document.getElementById(`opt-${conf.id}`);
-                const target = getTargetDate(conf.id);
-                const diff = (target - now) / 3600000;
-                btn.classList.toggle('opacity-30', diff > 0.01 || diff < -20);
-                btn.dataset.valid = (diff <= 0.01 && diff >= -20);
-                btn.querySelector('.badge').innerText = diff > 0.01 ? "未到" : (diff < -20 ? "超時" : "");
+
+            // 更新按鈕狀態（灰掣邏輯）
+            optionConfigs.forEach(opt => {
+                const btn = document.getElementById(`opt-btn-${opt.id}`);
+                if (!btn) return;
+                
+                const target = getTargetDate(opt.id);
+                const diffHrs = (target.getTime() - now.getTime()) / 3600000;
+                const badge = btn.querySelector('.status-badge');
+
+                if (diffHrs > 0.01) { // 未來時間
+                    btn.classList.add('opacity-40');
+                    btn.dataset.valid = "false";
+                    badge.innerText = "未到";
+                } else if (diffHrs < -20) { // 太舊的時間
+                    btn.classList.add('opacity-30');
+                    btn.dataset.valid = "false";
+                    badge.innerText = "超時";
+                } else {
+                    btn.classList.remove('opacity-40', 'opacity-30');
+                    btn.dataset.valid = "true";
+                    badge.innerText = "";
+                }
             });
         }
 
         function handleTravel(id, btn) {
-            if (btn.dataset.valid === "false") {
+            const now = new Date();
+            const targetDate = (id === 99) ? now : getTargetDate(id);
+
+            if (id !== 99 && btn.dataset.valid === "false") {
                 clickCounts[id] = (clickCounts[id] || 0) + 1;
-                if (clickCounts[id] > 5) { btn.innerHTML = "珍惜當下 ✨"; return; }
+                if (clickCounts[id] > 5) { btn.innerHTML = "<div class='text-xs opacity-50'>珍惜當下 ✨</div>"; return; }
                 btn.classList.add('animate-shake', 'invalid-feedback');
                 setTimeout(() => btn.classList.remove('animate-shake', 'invalid-feedback'), 400);
                 return;
             }
-            const target = getTargetDate(id);
-            const offset = 8 + (target - new Date()) / 3600000;
-            const closest = timezoneData.reduce((p, c) => Math.abs(c.offset - offset) < Math.abs(p.offset - offset) ? c : p);
+
+            const diffHours = (targetDate.getTime() - now.getTime()) / 3600000;
+            const targetOffset = 8 + diffHours;
+            const closest = timezoneData.reduce((prev, curr) => Math.abs(curr.offset - targetOffset) < Math.abs(prev.offset - targetOffset) ? curr : prev);
+
             document.getElementById('result-area').classList.remove('hidden');
-            document.getElementById('target-display').innerText = `${target.getDate() === new Date().getDate() ? 'Today' : 'Yesterday'} ${target.getHours()}:00`;
+            const isToday = targetDate.getDate() === now.getDate();
+            document.getElementById('target-display').innerText = `${isToday ? 'Today' : 'Yesterday'} ${targetDate.getHours()}:00`;
             document.getElementById('offset-display').innerText = `UTC ${closest.offset >= 0 ? '+' : ''}${closest.offset}`;
             document.getElementById('location-display').innerText = closest.location;
+            
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         }
 
         function switchTab(tab) {
@@ -111,18 +204,29 @@
             document.getElementById('tab-today').classList.toggle('hidden', tab !== 'today');
             document.getElementById('tab-btn-yesterday').classList.toggle('bg-sky-600', tab === 'yesterday');
             document.getElementById('tab-btn-today').classList.toggle('bg-sky-600', tab === 'today');
+            document.getElementById('tab-btn-yesterday').classList.toggle('text-slate-400', tab !== 'yesterday');
+            document.getElementById('tab-btn-today').classList.toggle('text-slate-400', tab !== 'today');
         }
 
         window.onload = () => {
-            configs.forEach(c => {
+            const yContainer = document.getElementById('tab-yesterday');
+            const tContainer = document.getElementById('tab-today');
+            
+            optionConfigs.forEach(opt => {
                 const btn = document.createElement('button');
-                btn.id = `opt-${c.id}`;
-                btn.className = "opt-btn relative bg-slate-800 p-4 rounded-xl text-left border border-slate-600";
-                btn.innerHTML = `<div class="badge absolute top-2 right-2 text-[10px] text-red-400"></div><div class="font-bold ${c.c}">${c.label}</div><div class="text-xs text-slate-500">${c.h}:00</div>`;
-                btn.onclick = () => handleTravel(c.id, btn);
-                document.getElementById(c.tab === 'yesterday' ? 'tab-yesterday' : 'tab-today').appendChild(btn);
+                btn.id = `opt-btn-${opt.id}`;
+                btn.className = "relative bg-slate-800/80 hover:bg-slate-700 border border-slate-600 rounded-xl p-4 text-left transition-all min-h-[80px]";
+                btn.innerHTML = `
+                    <div class="status-badge absolute top-2 right-3 text-[10px] font-bold text-slate-500"></div>
+                    <div class="font-bold ${opt.color}">${opt.label}</div>
+                    <div class="text-xs text-slate-400">${opt.h}:00 目標</div>
+                `;
+                btn.onclick = () => handleTravel(opt.id, btn);
+                (opt.tab === 'yesterday' ? yContainer : tContainer).appendChild(btn);
             });
-            updateUI(); setInterval(updateUI, 1000);
+
+            updateClock();
+            setInterval(updateClock, 1000);
         };
     </script>
 </body>
