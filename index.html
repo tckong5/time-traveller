@@ -16,9 +16,15 @@
             background: rgba(30, 41, 59, 0.7);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(56, 189, 248, 0.3);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
         }
         .neon-glow {
             text-shadow: 0 0 10px rgba(56, 189, 248, 0.8);
+        }
+        select {
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: #f1f5f9;
         }
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
@@ -41,14 +47,15 @@
     <div class="max-w-2xl w-full">
         <header class="text-center mb-8">
             <h1 class="text-4xl font-bold neon-glow text-sky-400 mb-2">TIME TRAVELLER</h1>
-            <p class="text-slate-400 text-sm">穿越時區，尋找你需要的時刻</p>
+            <!-- 呢句 100% 跟返你原本嗰句 -->
+            <p class="text-slate-400 text-sm">穿梭於地球時區，尋找你遺失或嚮往的時刻</p>
         </header>
 
         <div class="time-card rounded-2xl p-6 mb-8">
             <!-- 香港時間顯示 -->
             <div class="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
                 <div>
-                    <span class="text-xs uppercase tracking-widest text-slate-500">香港時間 (UTC+8)</span>
+                    <span class="text-xs uppercase tracking-widest text-slate-500">當前香港時間 (UTC+8)</span>
                     <div id="current-hkt" class="text-2xl font-bold text-sky-300">--:--:--</div>
                 </div>
                 <div class="text-right">
@@ -57,26 +64,52 @@
                 </div>
             </div>
 
-            <!-- Tab 切換 -->
+            <!-- Tab 控制 -->
             <div class="flex mb-6 rounded-lg bg-slate-800 p-1">
                 <button id="tab-btn-yesterday" onclick="switchTab('yesterday')" class="w-1/2 py-2 text-sm font-bold rounded-md bg-sky-600 text-white transition-all uppercase tracking-wider">Yesterday</button>
                 <button id="tab-btn-today" onclick="switchTab('today')" class="w-1/2 py-2 text-sm font-bold rounded-md text-slate-400 hover:text-white transition-all uppercase tracking-wider">Today</button>
             </div>
 
-            <!-- 按鈕容器 -->
-            <div id="tab-yesterday" class="grid grid-cols-1 sm:grid-cols-2 gap-3 block"></div>
-            <div id="tab-today" class="grid grid-cols-1 sm:grid-cols-2 gap-3 hidden"></div>
+            <!-- 預設場景按鈕 (Time Ranges) -->
+            <div class="space-y-4 mb-4">
+                <div id="tab-yesterday" class="grid grid-cols-1 sm:grid-cols-2 gap-3 block"></div>
+                <div id="tab-today" class="grid grid-cols-1 sm:grid-cols-2 gap-3 hidden"></div>
+            </div>
 
+            <!-- 手動輸入區域 -->
             <div class="border-t border-slate-700/50 pt-6 mt-6">
-                <button onclick="handleTravel(99, this)" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-lg transition-all border border-slate-600">
-                    啟動時空跳躍
+                <h3 class="text-sm font-bold text-slate-400 mb-4 uppercase tracking-wider flex items-center">
+                    <span class="mr-2">⚙️</span> 手動輸入 (Manual)
+                </h3>
+                <div class="grid grid-cols-12 gap-3 mb-4 items-end">
+                    <div class="col-span-4">
+                        <label class="block text-[10px] font-medium mb-1 text-slate-400 uppercase tracking-widest text-center">Day</label>
+                        <select id="manual-day" class="w-full p-3 rounded-lg outline-none text-sm text-center font-bold">
+                            <option value="0">TODAY</option>
+                            <option value="-1">YESTERDAY</option>
+                        </select>
+                    </div>
+                    <div class="col-span-8 flex space-x-2 items-center">
+                        <div class="w-1/2">
+                            <label class="block text-[10px] font-medium mb-1 text-slate-400 uppercase tracking-widest text-center">Hour</label>
+                            <select id="manual-hour" class="w-full p-3 rounded-lg outline-none text-sm text-center font-bold"></select>
+                        </div>
+                        <span class="text-slate-400 font-bold pt-4">:</span>
+                        <div class="w-1/2">
+                            <label class="block text-[10px] font-medium mb-1 text-slate-400 uppercase tracking-widest text-center">Min</label>
+                            <select id="manual-minute" class="w-full p-3 rounded-lg outline-none text-sm text-center font-bold"></select>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="handleTravel(99, this)" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-lg transition-all border border-slate-600 active:scale-95">
+                    啟動跨時空跳躍
                 </button>
             </div>
         </div>
 
         <!-- 結果顯示區 -->
         <div id="result-area" class="hidden mb-12">
-            <div class="time-card rounded-2xl p-6 border-l-4 border-l-sky-500">
+            <div class="time-card rounded-2xl p-6 border-l-4 border-l-sky-500 relative overflow-hidden">
                 <h2 class="text-xl font-bold mb-4 flex items-center">📍 跳躍目的地</h2>
                 <div class="space-y-4">
                     <div class="bg-slate-800/70 p-4 rounded-xl border border-slate-700/50">
@@ -103,39 +136,45 @@
             { offset: -12, location: "Baker Island" }, { offset: -11, location: "Pago Pago" }, { offset: -10, location: "Honolulu" },
             { offset: -9, location: "Anchorage" }, { offset: -8, location: "Los Angeles" }, { offset: -7, location: "Denver" },
             { offset: -6, location: "Chicago" }, { offset: -5, location: "New York" }, { offset: -4, location: "Santiago" },
-            { offset: -3, location: "Buenos Aires" }, { offset: 0, location: "London" }, { offset: 1, location: "Paris" },
-            { offset: 3, location: "Moscow" }, { offset: 4, location: "Dubai" }, { offset: 7, location: "Bangkok" },
-            { offset: 8, location: "Hong Kong" }, { offset: 9, location: "Tokyo" }, { offset: 10, location: "Sydney" },
-            { offset: 12, location: "Auckland" }, { offset: 14, location: "Kiritimati" }
+            { offset: -3, location: "Buenos Aires" }, { offset: -2, location: "South Georgia" }, { offset: -1, location: "Azores" },
+            { offset: 0, location: "London" }, { offset: 1, location: "Paris" }, { offset: 2, location: "Cairo" },
+            { offset: 3, location: "Moscow" }, { offset: 4, location: "Dubai" }, { offset: 5, location: "Karachi" },
+            { offset: 7, location: "Bangkok" }, { offset: 8, location: "Hong Kong" }, { offset: 9, location: "Tokyo" },
+            { offset: 10, location: "Sydney" }, { offset: 12, location: "Auckland" }, { offset: 14, location: "Kiritimati" }
         ];
 
+        // 呢度 100% 還原原本嘅 Label 同 Time Range 字眼
         const optionConfigs = [
-            { id: 1, tab: 'yesterday', label: '朝早', h: 9, color: 'text-sky-300' },
-            { id: 2, tab: 'yesterday', label: '中午', h: 14, color: 'text-sky-300' },
-            { id: 3, tab: 'yesterday', label: '夜晚', h: 22, color: 'text-sky-300' },
-            { id: 4, tab: 'yesterday', label: '深夜', h: 23, color: 'text-sky-300' }, // 23:00 目標
-            { id: 5, tab: 'today', label: '朝早', h: 9, color: 'text-emerald-400' },
-            { id: 6, tab: 'today', label: '中午', h: 14, color: 'text-emerald-400' },
-            { id: 7, tab: 'today', label: '夜晚', h: 22, color: 'text-emerald-400' },
-            { id: 8, tab: 'today', label: '深夜', h: 23, color: 'text-emerald-400' } // 23:00 目標
+            { id: 1, tab: 'yesterday', label: '朝早', range: '07:00 - 12:00', h: 9, color: 'text-sky-300' },
+            { id: 2, tab: 'yesterday', label: '中午', range: '12:00 - 18:00', h: 14, color: 'text-sky-300' },
+            { id: 3, tab: 'yesterday', label: '夜晚', range: '18:00 - 04:00', h: 22, color: 'text-sky-300' },
+            { id: 4, tab: 'yesterday', label: '深夜', range: '24:00 之前', h: 23, color: 'text-sky-300' },
+            { id: 5, tab: 'today', label: '朝早', range: '07:00 - 12:00', h: 9, color: 'text-emerald-400' },
+            { id: 6, tab: 'today', label: '中午', range: '12:00 - 18:00', h: 14, color: 'text-emerald-400' },
+            { id: 7, tab: 'today', label: '夜晚', range: '18:00 - 04:00', h: 22, color: 'text-emerald-400' },
+            { id: 8, tab: 'today', label: '深夜', range: '24:00 之前', h: 23, color: 'text-emerald-400' }
         ];
 
         let clickCounts = {};
 
         function getTargetDate(optId) {
             const now = new Date();
-            // 獲取香港今天的 00:00:00
             const todayStr = now.toLocaleDateString('en-CA', {timeZone: 'Asia/Hong_Kong'});
             const target = new Date(todayStr + "T00:00:00+08:00");
             
-            const config = optionConfigs.find(c => c.id === optId);
-            if (!config) return now;
+            if (optId === 99) {
+                const dayOffset = parseInt(document.getElementById('manual-day').value);
+                target.setDate(target.getDate() + dayOffset);
+                target.setHours(parseInt(document.getElementById('manual-hour').value));
+                target.setMinutes(parseInt(document.getElementById('manual-minute').value));
+                return target;
+            }
 
-            // 邏輯 1: 如果是 Yesterday Tab，減一天
+            const config = optionConfigs.find(c => c.id === optId);
             if (config.tab === 'yesterday') {
                 target.setDate(target.getDate() - 1);
             } 
-            // 邏輯 2: 如果是 Today 深夜，且現在是凌晨 0-5 點，視為「尋晚」
+            // 凌晨判斷：如果 0-5 點撳 Today 深夜，當做係返去尋晚嘅 23:00
             else if (optId === 8 && now.getHours() < 5) {
                 target.setDate(target.getDate() - 1);
             }
@@ -149,20 +188,17 @@
             document.getElementById('current-hkt').innerText = now.toLocaleTimeString('zh-HK', {hour12: false, timeZone: 'Asia/Hong_Kong'});
             document.getElementById('current-date').innerText = now.toLocaleDateString('zh-HK', {timeZone: 'Asia/Hong_Kong'});
 
-            // 更新按鈕狀態（灰掣邏輯）
             optionConfigs.forEach(opt => {
                 const btn = document.getElementById(`opt-btn-${opt.id}`);
-                if (!btn) return;
-                
                 const target = getTargetDate(opt.id);
-                const diffHrs = (target.getTime() - now.getTime()) / 3600000;
+                const diffHrs = (target - now) / 3600000;
                 const badge = btn.querySelector('.status-badge');
 
-                if (diffHrs > 0.01) { // 未來時間
+                if (diffHrs > 0.01) { 
                     btn.classList.add('opacity-40');
                     btn.dataset.valid = "false";
                     badge.innerText = "未到";
-                } else if (diffHrs < -20) { // 太舊的時間
+                } else if (diffHrs < -20) { 
                     btn.classList.add('opacity-30');
                     btn.dataset.valid = "false";
                     badge.innerText = "超時";
@@ -176,23 +212,23 @@
 
         function handleTravel(id, btn) {
             const now = new Date();
-            const targetDate = (id === 99) ? now : getTargetDate(id);
+            const targetDate = getTargetDate(id);
 
             if (id !== 99 && btn.dataset.valid === "false") {
                 clickCounts[id] = (clickCounts[id] || 0) + 1;
-                if (clickCounts[id] > 5) { btn.innerHTML = "<div class='text-xs opacity-50'>珍惜當下 ✨</div>"; return; }
+                if (clickCounts[id] > 5) { btn.innerHTML = "<div class='text-xs opacity-50 font-bold'>珍惜當下 ✨</div>"; return; }
                 btn.classList.add('animate-shake', 'invalid-feedback');
                 setTimeout(() => btn.classList.remove('animate-shake', 'invalid-feedback'), 400);
                 return;
             }
 
-            const diffHours = (targetDate.getTime() - now.getTime()) / 3600000;
+            const diffHours = (targetDate - now) / 3600000;
             const targetOffset = 8 + diffHours;
             const closest = timezoneData.reduce((prev, curr) => Math.abs(curr.offset - targetOffset) < Math.abs(prev.offset - targetOffset) ? curr : prev);
 
             document.getElementById('result-area').classList.remove('hidden');
-            const isToday = targetDate.getDate() === now.getDate();
-            document.getElementById('target-display').innerText = `${isToday ? 'Today' : 'Yesterday'} ${targetDate.getHours()}:00`;
+            const dayLabel = targetDate.getDate() === now.getDate() ? "Today" : "Yesterday";
+            document.getElementById('target-display').innerText = `${dayLabel} ${targetDate.getHours().toString().padStart(2, '0')}:${targetDate.getMinutes().toString().padStart(2, '0')}`;
             document.getElementById('offset-display').innerText = `UTC ${closest.offset >= 0 ? '+' : ''}${closest.offset}`;
             document.getElementById('location-display').innerText = closest.location;
             
@@ -202,29 +238,31 @@
         function switchTab(tab) {
             document.getElementById('tab-yesterday').classList.toggle('hidden', tab !== 'yesterday');
             document.getElementById('tab-today').classList.toggle('hidden', tab !== 'today');
-            document.getElementById('tab-btn-yesterday').classList.toggle('bg-sky-600', tab === 'yesterday');
-            document.getElementById('tab-btn-today').classList.toggle('bg-sky-600', tab === 'today');
-            document.getElementById('tab-btn-yesterday').classList.toggle('text-slate-400', tab !== 'yesterday');
-            document.getElementById('tab-btn-today').classList.toggle('text-slate-400', tab !== 'today');
+            document.getElementById('tab-btn-yesterday').className = tab === 'yesterday' ? 'w-1/2 py-2 text-sm font-bold rounded-md bg-sky-600 text-white shadow-sm transition-all' : 'w-1/2 py-2 text-sm font-bold rounded-md text-slate-400 hover:text-white transition-all';
+            document.getElementById('tab-btn-today').className = tab === 'today' ? 'w-1/2 py-2 text-sm font-bold rounded-md bg-sky-600 text-white shadow-sm transition-all' : 'w-1/2 py-2 text-sm font-bold rounded-md text-slate-400 hover:text-white transition-all';
         }
 
         window.onload = () => {
             const yContainer = document.getElementById('tab-yesterday');
             const tContainer = document.getElementById('tab-today');
-            
             optionConfigs.forEach(opt => {
                 const btn = document.createElement('button');
                 btn.id = `opt-btn-${opt.id}`;
-                btn.className = "relative bg-slate-800/80 hover:bg-slate-700 border border-slate-600 rounded-xl p-4 text-left transition-all min-h-[80px]";
+                btn.className = "relative bg-slate-800/80 hover:bg-slate-700 border border-slate-600 rounded-xl p-4 text-left transition-all min-h-[88px]";
                 btn.innerHTML = `
-                    <div class="status-badge absolute top-2 right-3 text-[10px] font-bold text-slate-500"></div>
-                    <div class="font-bold ${opt.color}">${opt.label}</div>
-                    <div class="text-xs text-slate-400">${opt.h}:00 目標</div>
+                    <div class="status-badge absolute top-2 right-3 text-[10px] font-bold tracking-wider opacity-70"></div>
+                    <div class="font-bold ${opt.color} mb-1">${opt.label}</div>
+                    <div class="text-xs text-slate-400">${opt.range}</div>
                 `;
                 btn.onclick = () => handleTravel(opt.id, btn);
                 (opt.tab === 'yesterday' ? yContainer : tContainer).appendChild(btn);
             });
 
+            const hrSelect = document.getElementById('manual-hour');
+            for(let i=0; i<24; i++) hrSelect.innerHTML += `<option value="${i}">${i.toString().padStart(2, '0')}</option>`;
+            const minSelect = document.getElementById('manual-minute');
+            for(let i=0; i<60; i++) minSelect.innerHTML += `<option value="${i}">${i.toString().padStart(2, '0')}</option>`;
+            
             updateClock();
             setInterval(updateClock, 1000);
         };
