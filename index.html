@@ -3,131 +3,207 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Time Traveller - 時區跳躍者</title>
+    <title>Time Traveller - 全球時空軸</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+        
         body {
             background-color: #0f172a;
             color: #f8fafc;
             font-family: 'Space+Mono', monospace;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
+
         .time-card {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(56, 189, 248, 0.3);
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            backdrop-filter: blur(8px);
         }
-        .neon-glow {
-            text-shadow: 0 0 10px rgba(56, 189, 248, 0.8);
+
+        .timeline-container {
+            height: 2px;
+            background: rgba(51, 65, 85, 0.5);
+            border-radius: 2px;
+            position: relative;
         }
-        select {
-            background: #1e293b;
+
+        .plane-wrapper {
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            transition: left 0.1s ease-out;
+            cursor: grab;
+            z-index: 100;
+        }
+        .plane-wrapper:active {
+            cursor: grabbing;
+        }
+
+        .plane-icon {
+            font-size: 32px;
+            filter: drop-shadow(0 0 10px #38bdf8);
+            user-select: none;
+        }
+
+        .hk-now-marker {
+            position: absolute;
+            top: -10px;
+            width: 2px;
+            height: 22px;
+            background: #f43f5e;
+            box-shadow: 0 0 8px #f43f5e;
+            z-index: 10;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 60px;
+            margin: 0;
+            z-index: 110;
+            cursor: pointer;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 60px;
+            width: 60px;
+            background: transparent;
+            border: none;
+        }
+
+        .tab-active {
+            background: #0284c7 !important;
+            color: white !important;
+        }
+
+        .option-btn {
+            background: rgba(30, 41, 59, 0.8);
             border: 1px solid #334155;
-            color: #f1f5f9;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
         }
+
+        /* 震動與錯誤反饋 */
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-6px); }
-            50% { transform: translateX(6px); }
-            75% { transform: translateX(-6px); }
+            25% { transform: translateX(-4px); }
+            50% { transform: translateX(4px); }
+            75% { transform: translateX(-4px); }
         }
         .animate-shake {
-            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
-        }
-        .invalid-feedback {
+            animation: shake 0.3s ease-in-out;
             border-color: #ef4444 !important;
-            box-shadow: 0 0 15px rgba(239, 68, 68, 0.4) !important;
-            background-color: rgba(127, 29, 29, 0.3) !important;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.3) !important;
+        }
+
+        .expired-btn {
+            opacity: 0.3;
+            filter: grayscale(1);
+        }
+
+        .status-tag {
+            position: absolute;
+            top: 2px;
+            right: 4px;
+            font-size: 8px;
+            font-weight: bold;
+            opacity: 0.8;
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center p-4 md:p-8">
+<body class="min-h-screen">
 
-    <div class="max-w-2xl w-full">
+    <div class="max-w-xl w-full px-6">
         <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold neon-glow text-sky-400 mb-2">TIME TRAVELLER</h1>
-            <!-- 呢句 100% 跟返你原本嗰句 -->
-            <p class="text-slate-400 text-sm">穿梭於地球時區，尋找你遺失或嚮往的時刻</p>
+            <h1 class="text-3xl font-bold text-sky-400 mb-2 tracking-tighter">TIME TRAVELLER</h1>
+            <p class="text-slate-400 text-xs">穿梭於地球時區，尋找你遺失或嚮往的時刻</p>
         </header>
 
-        <div class="time-card rounded-2xl p-6 mb-8">
-            <!-- 香港時間顯示 -->
-            <div class="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
-                <div>
-                    <span class="text-xs uppercase tracking-widest text-slate-500">當前香港時間 (UTC+8)</span>
-                    <div id="current-hkt" class="text-2xl font-bold text-sky-300">--:--:--</div>
+        <!-- 顯示面板 -->
+        <div class="time-card rounded-3xl p-8 mb-6 text-center">
+            <div id="display-time" class="text-7xl font-bold text-white tracking-tighter">--:--</div>
+            <div id="display-date" class="text-sm text-sky-400 mt-2 font-bold uppercase tracking-widest">-- / -- / --</div>
+            
+            <div class="flex justify-between mt-10 border-t border-slate-700/50 pt-6 px-2">
+                <div class="text-left">
+                    <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">Offset</p>
+                    <p id="info-offset" class="text-xl font-bold text-white">UTC +8.0</p>
                 </div>
                 <div class="text-right">
-                    <span class="text-xs uppercase tracking-widest text-slate-500">日期</span>
-                    <div id="current-date" class="text-lg font-semibold">----/--/--</div>
+                    <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">Location</p>
+                    <p id="info-city" class="text-xl font-bold text-emerald-400">Hong Kong</p>
                 </div>
             </div>
+        </div>
 
-            <!-- Tab 控制 -->
-            <div class="flex mb-6 rounded-lg bg-slate-800 p-1">
-                <button id="tab-btn-yesterday" onclick="switchTab('yesterday')" class="w-1/2 py-2 text-sm font-bold rounded-md bg-sky-600 text-white transition-all uppercase tracking-wider">Yesterday</button>
-                <button id="tab-btn-today" onclick="switchTab('today')" class="w-1/2 py-2 text-sm font-bold rounded-md text-slate-400 hover:text-white transition-all uppercase tracking-wider">Today</button>
+        <!-- 中間：Tab 選項 -->
+        <div class="time-card rounded-2xl p-4 mb-10">
+            <div class="flex mb-4 rounded-xl bg-slate-800/50 p-1">
+                <button id="tab-yesterday-btn" onclick="switchTab('yesterday')" class="w-1/2 py-2 text-xs font-bold rounded-lg text-slate-400 transition-all uppercase tracking-wider">Yesterday</button>
+                <button id="tab-today-btn" onclick="switchTab('today')" class="w-1/2 py-2 text-xs font-bold rounded-lg tab-active transition-all uppercase tracking-wider">Today</button>
             </div>
 
-            <!-- 預設場景按鈕 (Time Ranges) -->
-            <div class="space-y-4 mb-4">
-                <div id="tab-yesterday" class="grid grid-cols-1 sm:grid-cols-2 gap-3 block"></div>
-                <div id="tab-today" class="grid grid-cols-1 sm:grid-cols-2 gap-3 hidden"></div>
+            <div id="options-yesterday" class="grid grid-cols-4 gap-2 hidden">
+                <button id="opt-y-9" onclick="handleOptionClick('yesterday', 9, this)" class="option-btn rounded-xl p-3 text-center">
+                    <div class="status-tag"></div>
+                    <div class="text-[10px] font-bold text-sky-400">朝早</div>
+                </button>
+                <button id="opt-y-14" onclick="handleOptionClick('yesterday', 14, this)" class="option-btn rounded-xl p-3 text-center">
+                    <div class="status-tag"></div>
+                    <div class="text-[10px] font-bold text-sky-400">中午</div>
+                </button>
+                <button id="opt-y-22" onclick="handleOptionClick('yesterday', 22, this)" class="option-btn rounded-xl p-3 text-center">
+                    <div class="status-tag"></div>
+                    <div class="text-[10px] font-bold text-sky-400">夜晚</div>
+                </button>
+                <button id="opt-y-23" onclick="handleOptionClick('yesterday', 23, this)" class="option-btn rounded-xl p-3 text-center">
+                    <div class="status-tag"></div>
+                    <div class="text-[10px] font-bold text-sky-400">深夜</div>
+                </button>
             </div>
 
-            <!-- 手動輸入區域 -->
-            <div class="border-t border-slate-700/50 pt-6 mt-6">
-                <h3 class="text-sm font-bold text-slate-400 mb-4 uppercase tracking-wider flex items-center">
-                    <span class="mr-2">⚙️</span> 手動輸入 (Manual)
-                </h3>
-                <div class="grid grid-cols-12 gap-3 mb-4 items-end">
-                    <div class="col-span-4">
-                        <label class="block text-[10px] font-medium mb-1 text-slate-400 uppercase tracking-widest text-center">Day</label>
-                        <select id="manual-day" class="w-full p-3 rounded-lg outline-none text-sm text-center font-bold">
-                            <option value="0">TODAY</option>
-                            <option value="-1">YESTERDAY</option>
-                        </select>
-                    </div>
-                    <div class="col-span-8 flex space-x-2 items-center">
-                        <div class="w-1/2">
-                            <label class="block text-[10px] font-medium mb-1 text-slate-400 uppercase tracking-widest text-center">Hour</label>
-                            <select id="manual-hour" class="w-full p-3 rounded-lg outline-none text-sm text-center font-bold"></select>
-                        </div>
-                        <span class="text-slate-400 font-bold pt-4">:</span>
-                        <div class="w-1/2">
-                            <label class="block text-[10px] font-medium mb-1 text-slate-400 uppercase tracking-widest text-center">Min</label>
-                            <select id="manual-minute" class="w-full p-3 rounded-lg outline-none text-sm text-center font-bold"></select>
-                        </div>
-                    </div>
-                </div>
-                <button onclick="handleTravel(99, this)" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-lg transition-all border border-slate-600 active:scale-95">
-                    啟動跨時空跳躍
+            <div id="options-today" class="grid grid-cols-4 gap-2">
+                <button id="opt-t-9" onclick="handleOptionClick('today', 9, this)" class="option-btn rounded-xl p-3 text-center">
+                    <div class="status-tag"></div>
+                    <div class="text-[10px] font-bold text-emerald-400">朝早</div>
+                </button>
+                <button id="opt-t-14" onclick="handleOptionClick('today', 14, this)" class="option-btn rounded-xl p-3 text-center">
+                    <div class="status-tag"></div>
+                    <div class="text-[10px] font-bold text-emerald-400">中午</div>
+                </button>
+                <button id="opt-t-22" onclick="handleOptionClick('today', 22, this)" class="option-btn rounded-xl p-3 text-center">
+                    <div class="status-tag"></div>
+                    <div class="text-[10px] font-bold text-emerald-400">夜晚</div>
+                </button>
+                <button id="opt-t-23" onclick="handleOptionClick('today', 23, this)" class="option-btn rounded-xl p-3 text-center">
+                    <div class="status-tag"></div>
+                    <div class="text-[10px] font-bold text-emerald-400">深夜</div>
                 </button>
             </div>
         </div>
 
-        <!-- 結果顯示區 -->
-        <div id="result-area" class="hidden mb-12">
-            <div class="time-card rounded-2xl p-6 border-l-4 border-l-sky-500 relative overflow-hidden">
-                <h2 class="text-xl font-bold mb-4 flex items-center">📍 跳躍目的地</h2>
-                <div class="space-y-4">
-                    <div class="bg-slate-800/70 p-4 rounded-xl border border-slate-700/50">
-                        <p class="text-xs text-slate-400 mb-1 uppercase tracking-widest">目標場景</p>
-                        <p id="target-display" class="text-2xl font-bold text-white"></p>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="bg-slate-800/70 p-4 rounded-xl text-center border border-slate-700/50">
-                            <p class="text-xs text-slate-400 mb-1 uppercase tracking-widest">時區 (Timezone)</p>
-                            <p id="offset-display" class="text-xl font-bold text-sky-400"></p>
-                        </div>
-                        <div class="bg-slate-800/70 p-4 rounded-xl text-center border border-slate-700/50">
-                            <p class="text-xs text-slate-400 mb-1 uppercase tracking-widest">建議座標 (City)</p>
-                            <p id="location-display" class="text-xl font-bold text-sky-400"></p>
-                        </div>
-                    </div>
+        <!-- 底部：飛機時空軸 -->
+        <div class="relative px-4 h-20 flex items-center">
+            <div class="w-full timeline-container">
+                <div id="plane-wrapper" class="plane-wrapper">
+                    <div id="plane" class="plane-icon">✈️</div>
                 </div>
+                <div id="hk-marker" class="hk-now-marker"></div>
             </div>
+            <input type="range" id="main-timeline" min="-20" max="6" step="0.1" value="0" oninput="handleSliderChange()">
+            
+            <div class="absolute -bottom-2 left-4 text-[8px] text-slate-600 font-bold">UTC-12</div>
+            <div class="absolute -bottom-2 right-4 text-[8px] text-slate-600 font-bold">UTC+14</div>
         </div>
     </div>
 
@@ -139,132 +215,139 @@
             { offset: -3, location: "Buenos Aires" }, { offset: -2, location: "South Georgia" }, { offset: -1, location: "Azores" },
             { offset: 0, location: "London" }, { offset: 1, location: "Paris" }, { offset: 2, location: "Cairo" },
             { offset: 3, location: "Moscow" }, { offset: 4, location: "Dubai" }, { offset: 5, location: "Karachi" },
-            { offset: 7, location: "Bangkok" }, { offset: 8, location: "Hong Kong" }, { offset: 9, location: "Tokyo" },
-            { offset: 10, location: "Sydney" }, { offset: 12, location: "Auckland" }, { offset: 14, location: "Kiritimati" }
+            { offset: 6, location: "Dhaka" }, { offset: 7, location: "Bangkok" }, { offset: 8, location: "Hong Kong" },
+            { offset: 9, location: "Tokyo" }, { offset: 10, location: "Sydney" }, { offset: 11, location: "Noumea" },
+            { offset: 12, location: "Auckland" }, { offset: 13, location: "Nuku'alofa" }, { offset: 14, location: "Kiritimati" }
         ];
 
-        // 呢度 100% 還原原本嘅 Label 同 Time Range 字眼
-        const optionConfigs = [
-            { id: 1, tab: 'yesterday', label: '朝早', range: '07:00 - 12:00', h: 9, color: 'text-sky-300' },
-            { id: 2, tab: 'yesterday', label: '中午', range: '12:00 - 18:00', h: 14, color: 'text-sky-300' },
-            { id: 3, tab: 'yesterday', label: '夜晚', range: '18:00 - 04:00', h: 22, color: 'text-sky-300' },
-            { id: 4, tab: 'yesterday', label: '深夜', range: '24:00 之前', h: 23, color: 'text-sky-300' },
-            { id: 5, tab: 'today', label: '朝早', range: '07:00 - 12:00', h: 9, color: 'text-emerald-400' },
-            { id: 6, tab: 'today', label: '中午', range: '12:00 - 18:00', h: 14, color: 'text-emerald-400' },
-            { id: 7, tab: 'today', label: '夜晚', range: '18:00 - 04:00', h: 22, color: 'text-emerald-400' },
-            { id: 8, tab: 'today', label: '深夜', range: '24:00 之前', h: 23, color: 'text-emerald-400' }
-        ];
+        const clickStore = {};
 
-        let clickCounts = {};
-
-        function getTargetDate(optId) {
+        function getTargetTime(day, hour) {
             const now = new Date();
-            const todayStr = now.toLocaleDateString('en-CA', {timeZone: 'Asia/Hong_Kong'});
-            const target = new Date(todayStr + "T00:00:00+08:00");
-            
-            if (optId === 99) {
-                const dayOffset = parseInt(document.getElementById('manual-day').value);
-                target.setDate(target.getDate() + dayOffset);
-                target.setHours(parseInt(document.getElementById('manual-hour').value));
-                target.setMinutes(parseInt(document.getElementById('manual-minute').value));
-                return target;
-            }
-
-            const config = optionConfigs.find(c => c.id === optId);
-            if (config.tab === 'yesterday') {
-                target.setDate(target.getDate() - 1);
-            } 
-            // 凌晨判斷：如果 0-5 點撳 Today 深夜，當做係返去尋晚嘅 23:00
-            else if (optId === 8 && now.getHours() < 5) {
-                target.setDate(target.getDate() - 1);
-            }
-
-            target.setHours(config.h, 0, 0, 0);
+            const hkMidnight = new Date(now.toLocaleDateString('en-CA', {timeZone: 'Asia/Hong_Kong'}) + "T00:00:00+08:00");
+            const target = new Date(hkMidnight);
+            if (day === 'yesterday') target.setDate(target.getDate() - 1);
+            if (day === 'today' && hour === 23 && now.getHours() < 5) target.setDate(target.getDate() - 1);
+            target.setHours(hour, 0, 0, 0);
             return target;
         }
 
-        function updateClock() {
+        function handleOptionClick(day, hour, btn) {
+            const btnId = btn.id;
+            if (!clickStore[btnId]) clickStore[btnId] = 0;
+
             const now = new Date();
-            document.getElementById('current-hkt').innerText = now.toLocaleTimeString('zh-HK', {hour12: false, timeZone: 'Asia/Hong_Kong'});
-            document.getElementById('current-date').innerText = now.toLocaleDateString('zh-HK', {timeZone: 'Asia/Hong_Kong'});
+            const target = getTargetTime(day, hour);
+            const diffHours = (target - now) / 3600000;
+            
+            const isTooOld = diffHours < -20.01; 
+            const isFuture = diffHours > 6.01;   
+            const isNow = Math.abs(diffHours) <= 0.5;
 
-            optionConfigs.forEach(opt => {
-                const btn = document.getElementById(`opt-btn-${opt.id}`);
-                const target = getTargetDate(opt.id);
-                const diffHrs = (target - now) / 3600000;
-                const badge = btn.querySelector('.status-badge');
+            if (btn.dataset.locked === "true") return;
 
-                if (diffHrs > 0.01) { 
-                    btn.classList.add('opacity-40');
-                    btn.dataset.valid = "false";
-                    badge.innerText = "未到";
-                } else if (diffHrs < -20) { 
-                    btn.classList.add('opacity-30');
-                    btn.dataset.valid = "false";
-                    badge.innerText = "超時";
+            clickStore[btnId]++;
+
+            // 震動條件：無法到達 OR 當下
+            if (isTooOld || isFuture || isNow) {
+                if (clickStore[btnId] <= 5) {
+                    btn.classList.add('animate-shake');
+                    setTimeout(() => btn.classList.remove('animate-shake'), 300);
+                    // 如果是當下，雖然震動但依然可以執行跳轉
+                    if (isNow) jumpTo(day, hour); 
+                    return;
                 } else {
-                    btn.classList.remove('opacity-40', 'opacity-30');
-                    btn.dataset.valid = "true";
-                    badge.innerText = "";
+                    btn.dataset.locked = "true";
+                    btn.classList.add('expired-btn');
+                    let msg = isNow ? "珍惜當下" : (isTooOld ? "光陰不再" : "未來可期");
+                    btn.innerHTML = `<div class="text-[9px] font-bold text-slate-500 uppercase tracking-tighter leading-tight">${msg}</div>`;
+                    return;
+                }
+            }
+
+            // 正常跳躍
+            jumpTo(day, hour);
+        }
+
+        function jumpTo(day, hour) {
+            const now = new Date();
+            const target = getTargetTime(day, hour);
+            const diffHours = (target - now) / 3600000;
+            const clampedDiff = Math.max(-20, Math.min(6, diffHours));
+            document.getElementById('main-timeline').value = clampedDiff;
+            updateUI(target, clampedDiff);
+        }
+
+        function handleSliderChange() {
+            const relativeOffset = parseFloat(document.getElementById('main-timeline').value);
+            const now = new Date();
+            const targetDate = new Date(now.getTime() + relativeOffset * 3600000);
+            updateUI(targetDate, relativeOffset);
+        }
+
+        function updateUI(targetDate, relativeOffset) {
+            document.getElementById('display-time').innerText = targetDate.toLocaleTimeString('zh-HK', { hour12: false, hour: '2-digit', minute: '2-digit' });
+            document.getElementById('display-date').innerText = targetDate.toLocaleDateString('zh-HK', { month: 'short', day: 'numeric', year: 'numeric' });
+
+            const percent = ((relativeOffset + 20) / 26) * 100;
+            document.getElementById('plane-wrapper').style.left = `${percent}%`;
+            document.getElementById('plane').style.transform = `rotate(${relativeOffset >= 0 ? '0deg' : '180deg'})`;
+
+            const targetTimezone = 8 + relativeOffset;
+            document.getElementById('info-offset').innerText = `UTC ${targetTimezone >= 0 ? '+' : ''}${targetTimezone.toFixed(1)}`;
+            const closest = timezoneData.reduce((prev, curr) => Math.abs(curr.offset - targetTimezone) < Math.abs(prev.offset - targetTimezone) ? curr : prev);
+            document.getElementById('info-city').innerText = closest.location;
+        }
+
+        function updateButtonsStatus() {
+            const now = new Date();
+            const options = [
+                {d:'yesterday', h:9, id:'opt-y-9'}, {d:'yesterday', h:14, id:'opt-y-14'}, {d:'yesterday', h:22, id:'opt-y-22'}, {d:'yesterday', h:23, id:'opt-y-23'},
+                {d:'today', h:9, id:'opt-t-9'}, {d:'today', h:14, id:'opt-t-14'}, {d:'today', h:22, id:'opt-t-22'}, {d:'today', h:23, id:'opt-t-23'}
+            ];
+
+            options.forEach(opt => {
+                const btn = document.getElementById(opt.id);
+                const tag = btn.querySelector('.status-tag');
+                if (!btn || btn.dataset.locked === "true") return;
+
+                const target = getTargetTime(opt.d, opt.h);
+                const diffHours = (target - now) / 3600000;
+                
+                if (diffHours < -20.01) {
+                    btn.classList.add('expired-btn');
+                    tag.innerText = "OVER";
+                    tag.className = "status-tag text-red-500";
+                } else if (Math.abs(diffHours) <= 0.5) {
+                    // 當下：灰掉且標註
+                    btn.classList.add('expired-btn');
+                    tag.innerText = "當下";
+                    tag.className = "status-tag text-emerald-500";
+                } else if (diffHours > 6.01) {
+                    btn.classList.remove('expired-btn');
+                    tag.innerText = "未到";
+                    tag.className = "status-tag text-sky-500";
+                } else {
+                    btn.classList.remove('expired-btn');
+                    tag.innerText = "";
                 }
             });
         }
 
-        function handleTravel(id, btn) {
-            const now = new Date();
-            const targetDate = getTargetDate(id);
-
-            if (id !== 99 && btn.dataset.valid === "false") {
-                clickCounts[id] = (clickCounts[id] || 0) + 1;
-                if (clickCounts[id] > 5) { btn.innerHTML = "<div class='text-xs opacity-50 font-bold'>珍惜當下 ✨</div>"; return; }
-                btn.classList.add('animate-shake', 'invalid-feedback');
-                setTimeout(() => btn.classList.remove('animate-shake', 'invalid-feedback'), 400);
-                return;
-            }
-
-            const diffHours = (targetDate - now) / 3600000;
-            const targetOffset = 8 + diffHours;
-            const closest = timezoneData.reduce((prev, curr) => Math.abs(curr.offset - targetOffset) < Math.abs(prev.offset - targetOffset) ? curr : prev);
-
-            document.getElementById('result-area').classList.remove('hidden');
-            const dayLabel = targetDate.getDate() === now.getDate() ? "Today" : "Yesterday";
-            document.getElementById('target-display').innerText = `${dayLabel} ${targetDate.getHours().toString().padStart(2, '0')}:${targetDate.getMinutes().toString().padStart(2, '0')}`;
-            document.getElementById('offset-display').innerText = `UTC ${closest.offset >= 0 ? '+' : ''}${closest.offset}`;
-            document.getElementById('location-display').innerText = closest.location;
-            
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-        }
-
         function switchTab(tab) {
-            document.getElementById('tab-yesterday').classList.toggle('hidden', tab !== 'yesterday');
-            document.getElementById('tab-today').classList.toggle('hidden', tab !== 'today');
-            document.getElementById('tab-btn-yesterday').className = tab === 'yesterday' ? 'w-1/2 py-2 text-sm font-bold rounded-md bg-sky-600 text-white shadow-sm transition-all' : 'w-1/2 py-2 text-sm font-bold rounded-md text-slate-400 hover:text-white transition-all';
-            document.getElementById('tab-btn-today').className = tab === 'today' ? 'w-1/2 py-2 text-sm font-bold rounded-md bg-sky-600 text-white shadow-sm transition-all' : 'w-1/2 py-2 text-sm font-bold rounded-md text-slate-400 hover:text-white transition-all';
+            document.getElementById('options-yesterday').classList.toggle('hidden', tab !== 'yesterday');
+            document.getElementById('options-today').classList.toggle('hidden', tab !== 'today');
+            document.getElementById('tab-yesterday-btn').classList.toggle('tab-active', tab === 'yesterday');
+            document.getElementById('tab-today-btn').classList.toggle('tab-active', tab === 'today');
         }
 
         window.onload = () => {
-            const yContainer = document.getElementById('tab-yesterday');
-            const tContainer = document.getElementById('tab-today');
-            optionConfigs.forEach(opt => {
-                const btn = document.createElement('button');
-                btn.id = `opt-btn-${opt.id}`;
-                btn.className = "relative bg-slate-800/80 hover:bg-slate-700 border border-slate-600 rounded-xl p-4 text-left transition-all min-h-[88px]";
-                btn.innerHTML = `
-                    <div class="status-badge absolute top-2 right-3 text-[10px] font-bold tracking-wider opacity-70"></div>
-                    <div class="font-bold ${opt.color} mb-1">${opt.label}</div>
-                    <div class="text-xs text-slate-400">${opt.range}</div>
-                `;
-                btn.onclick = () => handleTravel(opt.id, btn);
-                (opt.tab === 'yesterday' ? yContainer : tContainer).appendChild(btn);
-            });
-
-            const hrSelect = document.getElementById('manual-hour');
-            for(let i=0; i<24; i++) hrSelect.innerHTML += `<option value="${i}">${i.toString().padStart(2, '0')}</option>`;
-            const minSelect = document.getElementById('manual-minute');
-            for(let i=0; i<60; i++) minSelect.innerHTML += `<option value="${i}">${i.toString().padStart(2, '0')}</option>`;
-            
-            updateClock();
-            setInterval(updateClock, 1000);
+            const percent = (20 / 26) * 100;
+            document.getElementById('hk-marker').style.left = `${percent}%`;
+            document.getElementById('main-timeline').value = 0;
+            handleSliderChange();
+            updateButtonsStatus();
+            setInterval(updateButtonsStatus, 10000); 
         };
     </script>
 </body>
