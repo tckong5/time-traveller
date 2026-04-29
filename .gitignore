@@ -1,2 +1,8 @@
+# OS 系統產生的暫存檔 (避免上傳 Mac 或 Windows 的垃圾檔案)
 .DS_Store
 Thumbs.db
+
+# 編輯器設定 (避免上傳你個人的 VS Code 或開發環境設定)
+.vscode/
+.idea/
+*.swp
