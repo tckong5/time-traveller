@@ -35,7 +35,7 @@
             position: absolute;
             top: 50%;
             transform: translate(-50%, -50%);
-            transition: left 0.1s ease-out;
+            /* 已移除 transition: left 0.1s ease-out; 以解決 iOS 拖拽殘影問題 */
             cursor: grab;
             z-index: 100;
         }
@@ -293,7 +293,7 @@
                 if (clickStore[btnId] <= 5) {
                     btn.classList.add('animate-shake');
                     setTimeout(() => btn.classList.remove('animate-shake'), 300);
-                    if (isNow) executeJump(target); 
+                    if (isNow) executeJump(now); 
                     return;
                 } else {
                     btn.dataset.locked = "true";
