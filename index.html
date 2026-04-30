@@ -8,6 +8,11 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
         
+        /* 移除 iOS 點擊時的預設高亮方塊 */
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
+
         body {
             background-color: #0f172a;
             color: #f8fafc;
@@ -35,7 +40,6 @@
             position: absolute;
             top: 50%;
             transform: translate(-50%, -50%);
-            /* 已移除 transition: left 0.1s ease-out; 以解決 iOS 拖拽殘影問題 */
             cursor: grab;
             z-index: 100;
         }
@@ -45,8 +49,7 @@
 
         .plane-icon {
             font-size: 32px;
-            /* 修正 iPhone Safari Emoji 出現方框陰影嘅問題 */
-            text-shadow: 0 0 10px #38bdf8;
+            /* 移除 text-shadow 以徹底解決 iPhone Safari Emoji 殘影/光亮方框問題 */
             user-select: none;
         }
 
@@ -109,6 +112,9 @@
             animation: shake 0.3s ease-in-out;
             border-color: #ef4444 !important;
             box-shadow: 0 0 15px rgba(239, 68, 68, 0.3) !important;
+            /* 強制解除灰階與透明度，確保紅框清晰顯示 */
+            filter: grayscale(0) !important;
+            opacity: 1 !important;
         }
 
         .expired-btn {
@@ -242,8 +248,8 @@
         const timeConfigs = {
             'morning': { h: 9, m: 0, start: 6, end: 12 },
             'afternoon': { h: 14, m: 0, start: 12, end: 18 },
-            'night': { h: 22, m: 0, start: 18, end: 4 }, // 跨天
-            'deep_pre': { h: 23, m: 0, start: 23, end: 5 } // 涵蓋 23:00-05:00
+            'night': { h: 22, m: 0, start: 18, end: 5 }, // 跨天區間 (18:00 - 05:00)
+            'deep_pre': { h: 23, m: 0, start: 23, end: 24 } // 鎖定在 23:00 - 24:00
         };
 
         // 核心：熬夜者邏輯
@@ -288,21 +294,22 @@
             if (day === 'today') {
                 if (config.start < config.end) {
                     isCurrentSlot = currentHour >= config.start && currentHour < config.end;
-                } else { // 跨天判定 (例如 18-04)
+                } else { // 跨天判定 (例如 18-05)
                     isCurrentSlot = currentHour >= config.start || currentHour < config.end;
                 }
             }
             
             const isTooOld = diffHours < -20.01; 
             const isFuture = diffHours > 6.01;   
-            const isNow = isCurrentSlot; // 確保「當下」觸發判定同時間區間掛鉤
+            const isNow = isCurrentSlot; 
 
             if (btn.dataset.locked === "true") return;
 
             clickStore[btnId]++;
 
             if (isTooOld || isFuture || isNow) {
-                if (clickStore[btnId] <= 5) {
+                // 第 4 下先鎖死出字 (前 3 下震動)
+                if (clickStore[btnId] <= 3) {
                     btn.classList.add('animate-shake');
                     setTimeout(() => btn.classList.remove('animate-shake'), 300);
                     if (isNow) executeJump(now); // 點擊當下，彈回正紅色Marker
