@@ -45,7 +45,8 @@
 
         .plane-icon {
             font-size: 32px;
-            filter: drop-shadow(0 0 10px #38bdf8);
+            /* 修正 iPhone Safari Emoji 出現方框陰影嘅問題 */
+            text-shadow: 0 0 10px #38bdf8;
             user-select: none;
         }
 
@@ -239,10 +240,10 @@
 
         const clickStore = {};
         const timeConfigs = {
-            'morning': { h: 9, m: 0 },
-            'afternoon': { h: 14, m: 0 },
-            'night': { h: 22, m: 0 },
-            'deep_pre': { h: 23, m: 0 }
+            'morning': { h: 9, m: 0, start: 6, end: 12 },
+            'afternoon': { h: 14, m: 0, start: 12, end: 18 },
+            'night': { h: 22, m: 0, start: 18, end: 4 }, // 跨天
+            'deep_pre': { h: 23, m: 0, start: 23, end: 5 } // 涵蓋 23:00-05:00
         };
 
         // 核心：熬夜者邏輯
@@ -280,10 +281,21 @@
             const now = new Date();
             const target = getTargetTime(day, type);
             const diffHours = (target - now) / 3600000;
+            const currentHour = now.getHours();
+            const config = timeConfigs[type];
+            
+            let isCurrentSlot = false;
+            if (day === 'today') {
+                if (config.start < config.end) {
+                    isCurrentSlot = currentHour >= config.start && currentHour < config.end;
+                } else { // 跨天判定 (例如 18-04)
+                    isCurrentSlot = currentHour >= config.start || currentHour < config.end;
+                }
+            }
             
             const isTooOld = diffHours < -20.01; 
             const isFuture = diffHours > 6.01;   
-            const isNow = Math.abs(diffHours) <= 0.5;
+            const isNow = isCurrentSlot; // 確保「當下」觸發判定同時間區間掛鉤
 
             if (btn.dataset.locked === "true") return;
 
@@ -293,12 +305,12 @@
                 if (clickStore[btnId] <= 5) {
                     btn.classList.add('animate-shake');
                     setTimeout(() => btn.classList.remove('animate-shake'), 300);
-                    if (isNow) executeJump(now); 
+                    if (isNow) executeJump(now); // 點擊當下，彈回正紅色Marker
                     return;
                 } else {
                     btn.dataset.locked = "true";
                     btn.classList.add('expired-btn');
-                    let msg = isNow ? "珍惜當下" : (isTooOld ? "光陰不再" : "未來可期");
+                    let msg = isNow ? "珍惜當下 ✨" : (isTooOld ? "光陰一去不返 🥀" : "未來可期 🚀");
                     btn.innerHTML = `<div class="text-[9px] font-bold text-slate-500 uppercase tracking-tighter leading-tight text-center">${msg}</div>`;
                     return;
                 }
@@ -338,6 +350,7 @@
 
         function updateButtonsStatus() {
             const now = new Date();
+            const currentHour = now.getHours();
             const buttons = [
                 {d:'yesterday', t:'morning', id:'opt-y-morning'}, {d:'yesterday', t:'afternoon', id:'opt-y-afternoon'}, {d:'yesterday', t:'night', id:'opt-y-night'}, {d:'yesterday', t:'deep_pre', id:'opt-y-deep'},
                 {d:'today', t:'morning', id:'opt-t-morning'}, {d:'today', t:'afternoon', id:'opt-t-afternoon'}, {d:'today', t:'night', id:'opt-t-night'}, {d:'today', t:'deep_pre', id:'opt-t-deep'}
@@ -351,15 +364,25 @@
 
                 const target = getTargetTime(opt.d, opt.t);
                 const diffHours = (target - now) / 3600000;
+                const config = timeConfigs[opt.t];
+
+                let isCurrentSlot = false;
+                if (opt.d === 'today') {
+                    if (config.start < config.end) {
+                        isCurrentSlot = currentHour >= config.start && currentHour < config.end;
+                    } else { // 跨天邏輯
+                        isCurrentSlot = currentHour >= config.start || currentHour < config.end;
+                    }
+                }
                 
-                if (diffHours < -20.01) {
-                    btn.classList.add('expired-btn');
-                    tag.innerText = "OVER";
-                    tag.className = "status-tag text-red-500";
-                } else if (Math.abs(diffHours) <= 0.5) {
+                if (isCurrentSlot) {
                     btn.classList.add('expired-btn');
                     tag.innerText = "當下";
                     tag.className = "status-tag text-emerald-500";
+                } else if (diffHours < -20.01) {
+                    btn.classList.add('expired-btn');
+                    tag.innerText = "OVER";
+                    tag.className = "status-tag text-red-500";
                 } else if (diffHours > 6.01) {
                     btn.classList.add('expired-btn');
                     tag.innerText = "未到";
