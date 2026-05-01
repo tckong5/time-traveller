@@ -49,7 +49,6 @@
 
         .plane-icon {
             font-size: 32px;
-            /* 移除 text-shadow 以徹底解決 iPhone Safari Emoji 殘影/光亮方框問題 */
             user-select: none;
         }
 
@@ -142,8 +141,8 @@
         .animate-shake {
             animation: shake 0.3s ease-in-out;
             border-color: #ef4444 !important;
-            box-shadow: 0 0 15px rgba(239, 68, 68, 0.3) !important;
-            /* 強制解除灰階與透明度，確保紅框清晰顯示 */
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.5) !important;
+            /* 強制解除灰階與透明度，確保紅框同內容清晰顯示 */
             filter: grayscale(0) !important;
             opacity: 1 !important;
         }
@@ -153,8 +152,8 @@
             filter: grayscale(1);
         }
 
-        /* 新增：完全鎖死後的專屬樣式，確保文字與 emoji 唔會變灰 */
-        .dead-btn {
+        /* 完全鎖死後的專屬樣式，確保文字與 emoji 唔會變灰 */
+        .locked-btn {
             background: rgba(15, 23, 42, 0.9) !important;
             border: 1px solid #1e293b !important;
             pointer-events: none;
@@ -285,130 +284,99 @@
 
         const clickStore = {};
         const timeConfigs = {
-            'morning': { h: 9, m: 0, start: 6, end: 12 },
-            'afternoon': { h: 14, m: 0, start: 12, end: 18 },
-            'night': { h: 22, m: 0, start: 18, end: 29 }, // 29 即翌日凌晨 5 點 (18+11)
-            'deep_pre': { h: 23, m: 0, start: 23, end: 24 } // 鎖定在 23:00 - 24:00
+            'morning': { h: 9, start: 6, end: 12 },
+            'afternoon': { h: 14, start: 12, end: 18 },
+            'night': { h: 22, start: 18, end: 28 }, // end: 28 代表翌日凌晨 04:00 (18+10)
+            'deep_pre': { h: 23, start: 23, end: 24 } // 鎖定在 23:00 - 24:00
         };
 
         // 核心：熬夜者邏輯
         function getLogicalDate() {
             const now = new Date();
             const logicDate = new Date(now);
-            // 只要未到凌晨 5 點，逻辑上就還是在過物理上的「昨天」
             if (now.getHours() < 5) {
                 logicDate.setDate(now.getDate() - 1);
             }
             return logicDate;
         }
 
-        function getTargetTime(dayTab, type) {
-            const now = new Date();
+        // 獲取該時段的精確 Start / End Date 對象
+        function getOptionTimeRange(dayTab, config) {
             const logicNow = getLogicalDate();
+            // 使用 en-CA 保證 YYYY-MM-DD 格式，避免時區誤差
+            const dateStr = logicNow.toLocaleDateString('en-CA', {timeZone: 'Asia/Hong_Kong'});
+            const baseDate = new Date(dateStr + "T00:00:00+08:00");
             
-            // 獲取邏輯今天香港時間的 00:00
-            const baseDate = new Date(logicNow.toLocaleDateString('en-CA', {timeZone: 'Asia/Hong_Kong'}) + "T00:00:00+08:00");
-            const target = new Date(baseDate);
-            const config = timeConfigs[type];
-
             if (dayTab === 'yesterday') {
-                target.setDate(target.getDate() - 1);
+                baseDate.setDate(baseDate.getDate() - 1);
             }
 
-            target.setHours(config.h, config.m, 0, 0);
-            return target;
+            const rStart = new Date(baseDate);
+            rStart.setHours(config.start, 0, 0, 0);
+
+            const rEnd = new Date(baseDate);
+            rEnd.setHours(config.end, 0, 0, 0); // 若 config.end > 24，JS會自動進位到第二天
+
+            return [rStart, rEnd];
         }
 
         function handleOptionClick(day, type, btn) {
             const btnId = btn.id;
-            if (!clickStore[btnId]) clickStore[btnId] = 0;
             if (btn.dataset.locked === "true") return;
+            if (!clickStore[btnId]) clickStore[btnId] = 0;
 
             const now = new Date();
-            let target = getTargetTime(day, type);
-            let diffHours = (target - now) / 3600000;
-            const currentHour = now.getHours();
             const config = timeConfigs[type];
-
-            // 智能尋找最近可用時間演算法 (Smart Jump Logic)
-            // 如果原本的 target (e.g. 09:00) 已經超出 Slider 限制 (-20H ~ +6H)
-            if (diffHours < -20 || diffHours > 6) {
-                let bestDiff = diffHours;
-                let bestTarget = target;
-                let minViolation = Infinity;
-
-                // 生成該時段內所有需要檢查的小時
-                let hoursToCheck = [];
-                if (config.start < config.end) {
-                    for (let i = config.start; i <= config.end; i++) hoursToCheck.push(i);
-                } else {
-                    for (let i = config.start; i <= 23; i++) hoursToCheck.push(i);
-                    for (let i = 0; i <= config.end; i++) hoursToCheck.push(i + 24);
-                }
-
-                // 尋找距離滑軌限制內、且最接近原定目標的可用時間
-                for (let h of hoursToCheck) {
-                    const testTarget = new Date(target);
-                    let testH = h;
-                    if (testH >= 24) {
-                        testTarget.setDate(testTarget.getDate() + 1);
-                        testH -= 24;
-                    }
-                    testTarget.setHours(testH, 0, 0, 0);
-                    const testDiff = (testTarget - now) / 3600000;
-                    
-                    if (testDiff >= -20 && testDiff <= 6) {
-                        let prefH = config.h;
-                        if (config.start > config.end && prefH <= config.end) prefH += 24;
-                        
-                        const violation = Math.abs(h - prefH);
-                        if (violation < minViolation) {
-                            minViolation = violation;
-                            bestDiff = testDiff;
-                            bestTarget = testTarget;
-                        }
-                    }
-                }
-
-                // 若找到符合的最近可用時間，替換目標
-                if (minViolation !== Infinity) {
-                    target = bestTarget;
-                    diffHours = bestDiff;
-                }
-            }
+            const [rStart, rEnd] = getOptionTimeRange(day, config);
             
-            // 當下區間判定
-            let isCurrentSlot = false;
-            if (day === 'today') {
-                let logicalCurrentHour = currentHour;
-                if (logicalCurrentHour < 5) logicalCurrentHour += 24; // 配合跨天陣列 mapping
-                isCurrentSlot = logicalCurrentHour >= config.start && logicalCurrentHour < config.end;
-            }
-            
-            const isTooOld = diffHours < -20.01; 
-            const isFuture = diffHours > 6.01;   
-            const isNow = isCurrentSlot; 
+            // 計算極限範圍：過去 20H 到 未來 6H
+            const limitPast = new Date(now.getTime() - 20 * 3600000);
+            const limitFuture = new Date(now.getTime() + 6 * 3600000);
 
-            clickStore[btnId]++;
+            // 當下邏輯：利用 Time Range 檢查
+            let isNow = false;
+            if (day === 'today' && now >= rStart && now < rEnd) {
+                isNow = true;
+            }
+
+            // 判斷 OVER / 未到：必須是「整個 Time Range」都超越了極限，才算無法到達
+            const isTooOld = rEnd <= limitPast; 
+            const isFuture = rStart >= limitFuture;
 
             if (isTooOld || isFuture || isNow) {
-                // 第 4 下出字 (前 3 下震動紅框)
+                clickStore[btnId]++;
+                // 前 3 下震動兼爆紅框，第 4 下鎖死
                 if (clickStore[btnId] <= 3) {
                     btn.classList.add('animate-shake');
                     setTimeout(() => btn.classList.remove('animate-shake'), 300);
-                    if (isNow) executeJump(now); // 點擊當下，彈回正紅色Marker
+                    if (isNow) executeJump(now); 
                     return;
                 } else {
                     btn.dataset.locked = "true";
-                    // 移除灰階 class，加入 dead-btn，令文字與 emoji 清晰可見
                     btn.classList.remove('expired-btn');
-                    btn.classList.add('dead-btn');
+                    btn.classList.add('locked-btn');
                     let msg = isNow ? "珍惜當下 ✨" : (isTooOld ? "光陰一去不返 🥀" : "未來可期 🚀");
-                    btn.innerHTML = `<div class="text-[11px] font-bold text-slate-300 uppercase tracking-tighter leading-tight text-center">${msg}</div>`;
+                    btn.innerHTML = `<div class="flex w-full h-full items-center justify-center text-[10px] font-bold text-slate-300 uppercase tracking-tighter text-center">${msg}</div>`;
                     return;
                 }
             }
 
+            // 智能尋找最近可用時間演算法 (Smart Jump Logic)
+            let target = new Date(rStart);
+            target.setHours(config.h, 0, 0, 0); // 預設跳轉時間
+            let diffHours = (target - now) / 3600000;
+
+            // 若目標時間超出 Slider (-20H ~ +6H) 範圍，自動尋找 Range 內最近的合法時間
+            if (diffHours < -20 || diffHours > 6) {
+                const overlapStart = new Date(Math.max(rStart, limitPast));
+                const overlapEnd = new Date(Math.min(rEnd, limitFuture));
+                
+                if (overlapStart <= overlapEnd) {
+                    if (target < overlapStart) target = overlapStart;
+                    else if (target > overlapEnd) target = overlapEnd;
+                }
+            }
+            
             executeJump(target);
         }
 
@@ -443,7 +411,9 @@
 
         function updateButtonsStatus() {
             const now = new Date();
-            const currentHour = now.getHours();
+            const limitPast = new Date(now.getTime() - 20 * 3600000);
+            const limitFuture = new Date(now.getTime() + 6 * 3600000);
+
             const buttons = [
                 {d:'yesterday', t:'morning', id:'opt-y-morning'}, {d:'yesterday', t:'afternoon', id:'opt-y-afternoon'}, {d:'yesterday', t:'night', id:'opt-y-night'}, {d:'yesterday', t:'deep_pre', id:'opt-y-deep'},
                 {d:'today', t:'morning', id:'opt-t-morning'}, {d:'today', t:'afternoon', id:'opt-t-afternoon'}, {d:'today', t:'night', id:'opt-t-night'}, {d:'today', t:'deep_pre', id:'opt-t-deep'}
@@ -451,36 +421,38 @@
 
             buttons.forEach(opt => {
                 const btn = document.getElementById(opt.id);
-                if (!btn) return;
-                const tag = btn.querySelector('.status-tag');
-                if (btn.dataset.locked === "true") return;
-
-                const target = getTargetTime(opt.d, opt.t);
-                const diffHours = (target - now) / 3600000;
-                const config = timeConfigs[opt.t];
-
-                let isCurrentSlot = false;
-                if (opt.d === 'today') {
-                    let logicalCurrentHour = currentHour;
-                    if (logicalCurrentHour < 5) logicalCurrentHour += 24;
-                    isCurrentSlot = logicalCurrentHour >= config.start && logicalCurrentHour < config.end;
-                }
+                if (!btn || btn.dataset.locked === "true") return;
                 
-                if (isCurrentSlot) {
+                const tag = btn.querySelector('.status-tag');
+                const config = timeConfigs[opt.t];
+                
+                const [rStart, rEnd] = getOptionTimeRange(opt.d, config);
+
+                let isNow = false;
+                if (opt.d === 'today' && now >= rStart && now < rEnd) {
+                    isNow = true;
+                }
+
+                // 只有「整個區間」都在限制之外，才會變灰
+                const isTooOld = rEnd <= limitPast; 
+                const isFuture = rStart >= limitFuture;
+
+                btn.classList.remove('expired-btn');
+                tag.innerText = "";
+                tag.className = "status-tag";
+
+                if (isNow) {
                     btn.classList.add('expired-btn');
                     tag.innerText = "當下";
-                    tag.className = "status-tag text-emerald-500";
-                } else if (diffHours < -20.01) {
+                    tag.classList.add('text-emerald-500');
+                } else if (isTooOld) {
                     btn.classList.add('expired-btn');
                     tag.innerText = "OVER";
-                    tag.className = "status-tag text-red-500";
-                } else if (diffHours > 6.01) {
+                    tag.classList.add('text-red-500');
+                } else if (isFuture) {
                     btn.classList.add('expired-btn');
                     tag.innerText = "未到";
-                    tag.className = "status-tag text-sky-500";
-                } else {
-                    btn.classList.remove('expired-btn');
-                    tag.innerText = "";
+                    tag.classList.add('text-sky-500');
                 }
             });
         }
