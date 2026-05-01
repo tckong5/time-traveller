@@ -63,10 +63,12 @@
             z-index: 10;
         }
 
+        /* 徹底清除 range input 在 iOS Safari/Firefox 上的隱形方框及軌道底色 */
         input[type=range] {
             -webkit-appearance: none;
+            appearance: none;
             width: 100%;
-            background: transparent;
+            background: transparent !important;
             position: absolute;
             top: 0;
             left: 0;
@@ -74,14 +76,43 @@
             margin: 0;
             z-index: 110;
             cursor: pointer;
+            outline: none !important;
+        }
+
+        input[type=range]:focus {
+            outline: none !important;
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            -webkit-appearance: none;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
         }
 
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
+            appearance: none;
             height: 60px;
             width: 60px;
-            background: transparent;
-            border: none;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            -webkit-box-shadow: none !important;
+            border-radius: 0;
+        }
+
+        input[type=range]::-moz-range-track {
+            background: transparent !important;
+            border: none !important;
+        }
+
+        input[type=range]::-moz-range-thumb {
+            height: 60px;
+            width: 60px;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
         }
 
         .tab-active {
@@ -120,6 +151,14 @@
         .expired-btn {
             opacity: 0.3;
             filter: grayscale(1);
+        }
+
+        /* 新增：完全鎖死後的專屬樣式，確保文字與 emoji 唔會變灰 */
+        .dead-btn {
+            background: rgba(15, 23, 42, 0.9) !important;
+            border: 1px solid #1e293b !important;
+            pointer-events: none;
+            /* 無 opacity 同 grayscale，保持入面文字明亮 */
         }
 
         .status-tag {
@@ -248,7 +287,7 @@
         const timeConfigs = {
             'morning': { h: 9, m: 0, start: 6, end: 12 },
             'afternoon': { h: 14, m: 0, start: 12, end: 18 },
-            'night': { h: 22, m: 0, start: 18, end: 5 }, // 跨天區間 (18:00 - 05:00)
+            'night': { h: 22, m: 0, start: 18, end: 29 }, // 29 即翌日凌晨 5 點 (18+11)
             'deep_pre': { h: 23, m: 0, start: 23, end: 24 } // 鎖定在 23:00 - 24:00
         };
 
@@ -283,32 +322,77 @@
         function handleOptionClick(day, type, btn) {
             const btnId = btn.id;
             if (!clickStore[btnId]) clickStore[btnId] = 0;
+            if (btn.dataset.locked === "true") return;
 
             const now = new Date();
-            const target = getTargetTime(day, type);
-            const diffHours = (target - now) / 3600000;
+            let target = getTargetTime(day, type);
+            let diffHours = (target - now) / 3600000;
             const currentHour = now.getHours();
             const config = timeConfigs[type];
+
+            // 智能尋找最近可用時間演算法 (Smart Jump Logic)
+            // 如果原本的 target (e.g. 09:00) 已經超出 Slider 限制 (-20H ~ +6H)
+            if (diffHours < -20 || diffHours > 6) {
+                let bestDiff = diffHours;
+                let bestTarget = target;
+                let minViolation = Infinity;
+
+                // 生成該時段內所有需要檢查的小時
+                let hoursToCheck = [];
+                if (config.start < config.end) {
+                    for (let i = config.start; i <= config.end; i++) hoursToCheck.push(i);
+                } else {
+                    for (let i = config.start; i <= 23; i++) hoursToCheck.push(i);
+                    for (let i = 0; i <= config.end; i++) hoursToCheck.push(i + 24);
+                }
+
+                // 尋找距離滑軌限制內、且最接近原定目標的可用時間
+                for (let h of hoursToCheck) {
+                    const testTarget = new Date(target);
+                    let testH = h;
+                    if (testH >= 24) {
+                        testTarget.setDate(testTarget.getDate() + 1);
+                        testH -= 24;
+                    }
+                    testTarget.setHours(testH, 0, 0, 0);
+                    const testDiff = (testTarget - now) / 3600000;
+                    
+                    if (testDiff >= -20 && testDiff <= 6) {
+                        let prefH = config.h;
+                        if (config.start > config.end && prefH <= config.end) prefH += 24;
+                        
+                        const violation = Math.abs(h - prefH);
+                        if (violation < minViolation) {
+                            minViolation = violation;
+                            bestDiff = testDiff;
+                            bestTarget = testTarget;
+                        }
+                    }
+                }
+
+                // 若找到符合的最近可用時間，替換目標
+                if (minViolation !== Infinity) {
+                    target = bestTarget;
+                    diffHours = bestDiff;
+                }
+            }
             
+            // 當下區間判定
             let isCurrentSlot = false;
             if (day === 'today') {
-                if (config.start < config.end) {
-                    isCurrentSlot = currentHour >= config.start && currentHour < config.end;
-                } else { // 跨天判定 (例如 18-05)
-                    isCurrentSlot = currentHour >= config.start || currentHour < config.end;
-                }
+                let logicalCurrentHour = currentHour;
+                if (logicalCurrentHour < 5) logicalCurrentHour += 24; // 配合跨天陣列 mapping
+                isCurrentSlot = logicalCurrentHour >= config.start && logicalCurrentHour < config.end;
             }
             
             const isTooOld = diffHours < -20.01; 
             const isFuture = diffHours > 6.01;   
             const isNow = isCurrentSlot; 
 
-            if (btn.dataset.locked === "true") return;
-
             clickStore[btnId]++;
 
             if (isTooOld || isFuture || isNow) {
-                // 第 4 下先鎖死出字 (前 3 下震動)
+                // 第 4 下出字 (前 3 下震動紅框)
                 if (clickStore[btnId] <= 3) {
                     btn.classList.add('animate-shake');
                     setTimeout(() => btn.classList.remove('animate-shake'), 300);
@@ -316,9 +400,11 @@
                     return;
                 } else {
                     btn.dataset.locked = "true";
-                    btn.classList.add('expired-btn');
+                    // 移除灰階 class，加入 dead-btn，令文字與 emoji 清晰可見
+                    btn.classList.remove('expired-btn');
+                    btn.classList.add('dead-btn');
                     let msg = isNow ? "珍惜當下 ✨" : (isTooOld ? "光陰一去不返 🥀" : "未來可期 🚀");
-                    btn.innerHTML = `<div class="text-[9px] font-bold text-slate-500 uppercase tracking-tighter leading-tight text-center">${msg}</div>`;
+                    btn.innerHTML = `<div class="text-[11px] font-bold text-slate-300 uppercase tracking-tighter leading-tight text-center">${msg}</div>`;
                     return;
                 }
             }
@@ -375,11 +461,9 @@
 
                 let isCurrentSlot = false;
                 if (opt.d === 'today') {
-                    if (config.start < config.end) {
-                        isCurrentSlot = currentHour >= config.start && currentHour < config.end;
-                    } else { // 跨天邏輯
-                        isCurrentSlot = currentHour >= config.start || currentHour < config.end;
-                    }
+                    let logicalCurrentHour = currentHour;
+                    if (logicalCurrentHour < 5) logicalCurrentHour += 24;
+                    isCurrentSlot = logicalCurrentHour >= config.start && logicalCurrentHour < config.end;
                 }
                 
                 if (isCurrentSlot) {
